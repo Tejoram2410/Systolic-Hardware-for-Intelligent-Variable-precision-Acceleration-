@@ -24,10 +24,10 @@ The architecture bridges a closed-loop Python quantization model ([`notebooks/nv
    - Paired with per-block 8-bit scale exponent offsets (`scale_block`) for micro-scaled Block Floating-Point (BFP) execution.
 
 3. **Software-Hardware Co-Design & Adaptive Trajectory:**
-   - closed-loop profiling on LLMs (e.g., Qwen2.5-0.5B across 24 layers, $32 \times 32$ macro-tile partitions).
+   - Closed-loop profiling on LLMs (e.g., Qwen2.5-0.5B across 24 layers, $32 \times 32$ macro-tile partitions).
    - Tracks an online error state register $S$ driven by activation quantization error to dynamically update thresholds:
-     $$\tau_{dyn} = \tau_{base} \cdot e^{-\gamma S} \cdot \text{depth\_prior}$$
-   - Hardware Tile Comparator (`Cost = ΔW · Φ(X) · S_base`) adaptively assigns INT4, NVFP4 (E2M1), or INT8 formats to weight tiles based on empirical sensitivity.
+     $$\tau_{\text{dyn}} = \tau_{\text{base}} \cdot e^{-\gamma S} \cdot \text{depth-prior}$$
+   - Hardware Tile Comparator ($\text{Cost} = \Delta W \cdot \Phi(X) \cdot S_{\text{base}}$) adaptively assigns INT4, NVFP4 (E2M1), or INT8 formats to weight tiles based on empirical sensitivity.
 
 4. **Low-Power RTL Architectural Innovations:**
    - **Pre-Computed 2s-Complement LUT (`nvfp4_e2m1_remapper`):** Directly maps NVFP4 to 4-bit 2s-complement signed integers with zero runtime adders.
