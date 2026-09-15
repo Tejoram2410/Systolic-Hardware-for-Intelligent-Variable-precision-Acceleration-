@@ -1,6 +1,5 @@
 # SHIVA: Systolic Hardware for Intelligent Variable-Precision Acceleration
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Target PDK](https://img.shields.io/badge/PDK-45nm_NanGate_%2F_FreePDK45-blue.svg)]()
 [![Clock Frequency](https://img.shields.io/badge/Sign--Off_Clock-500_MHz_(2.0ns)-brightgreen.svg)]()
 [![EDA Tools](https://img.shields.io/badge/EDA-Cadence_Genus_%2F_Joules_%2F_Xcelium-red.svg)]()
@@ -169,20 +168,4 @@ cd /path/to/mac_reconfig
 chmod +x scripts/run_master_power_comparison_45nm.sh
 ./scripts/run_master_power_comparison_45nm.sh
 ```
-
----
-
-## 📜 Citation & License
-
-This project is licensed under the **MIT License**.
-
-If you use this hardware-software co-design framework or Baugh-Wooley NVFP4 reconfigurable tile in your research, please cite:
-
-```bibtex
-@article{shiva2026systolic,
-  title={SHIVA: Systolic Hardware for Intelligent Variable-Precision Acceleration using Microscaled NVFP4 and Baugh-Wooley Co-Design},
-  author={Vigneswar, T. and Anoop, B.},
-  journal={IEEE Transactions on Very Large Scale Integration (VLSI) Systems},
-  year={2026}
-}
-```
+
