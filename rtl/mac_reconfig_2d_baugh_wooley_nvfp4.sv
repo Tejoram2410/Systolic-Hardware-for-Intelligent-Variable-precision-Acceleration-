@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Module: mac_reconfig_2d_baugh_wooley_nvfp4.sv
-// Description: ORIGINAL FIRST DESIGN 2D Reconfigurable 2x2 MAC Tile supporting INT4 & NVFP4
-//              (Microscaling E2M1 Block Floating-Point).
+// Description: LOW-POWER OPTIMIZED 2D Reconfigurable 2x2 MAC Tile supporting INT4 & NVFP4
+//              (Microscaling E2M1 Block Floating-Point) with Clean Multi-Format Dispatch.
 // Precision Modes (mode_2b):
 //   - 00: 4x4 SIMD (4 parallel MACs)
 //   - 01: Dual 8x4 Horizontal Fusion (2 parallel 8x4 MACs)
@@ -175,7 +175,7 @@ module nvfp4_e2m1_remapper (
 endmodule
 
 //=============================================================================
-// Top-Level 2D Reconfigurable MAC Tile (EXACT FIRST ORIGINAL ARCHITECTURE)
+// Top-Level 2D Reconfigurable MAC Tile with Minimal Overhead NVFP4 & INT4 Support
 //=============================================================================
 module mac_reconfig_2d_baugh_wooley_nvfp4 (
     input  logic              clk,
@@ -207,50 +207,58 @@ module mac_reconfig_2d_baugh_wooley_nvfp4 (
     wire is_nvfp4_a = is_nvfp4[1];
     wire is_nvfp4_b = is_nvfp4[0];
 
-    // Dual-Rail Operand Isolation & Dynamic Gate-Free Switching
-    wire [3:0] nv_a0_raw = A0 & {4{is_nvfp4_a & valid_in}};
-    wire [3:0] nv_b0_raw = B0 & {4{is_nvfp4_b & valid_in}};
-    wire [3:0] nv_a1_raw = A1 & {4{is_nvfp4_a & valid_in}};
-    wire [3:0] nv_b1_raw = B1 & {4{is_nvfp4_b & valid_in}};
-    wire [3:0] nv_a2_raw = A2 & {4{is_nvfp4_a & valid_in}};
-    wire [3:0] nv_b2_raw = B2 & {4{is_nvfp4_b & valid_in}};
-    wire [3:0] nv_a3_raw = A3 & {4{is_nvfp4_a & valid_in}};
-    wire [3:0] nv_b3_raw = B3 & {4{is_nvfp4_b & valid_in}};
-
-    wire [3:0] int_a0_raw = A0 & {4{~is_nvfp4_a & valid_in}};
-    wire [3:0] int_b0_raw = B0 & {4{~is_nvfp4_b & valid_in}};
-    wire [3:0] int_a1_raw = A1 & {4{~is_nvfp4_a & valid_in}};
-    wire [3:0] int_b1_raw = B1 & {4{~is_nvfp4_b & valid_in}};
-    wire [3:0] int_a2_raw = A2 & {4{~is_nvfp4_a & valid_in}};
-    wire [3:0] int_b2_raw = B2 & {4{~is_nvfp4_b & valid_in}};
-    wire [3:0] int_a3_raw = A3 & {4{~is_nvfp4_a & valid_in}};
-    wire [3:0] int_b3_raw = B3 & {4{~is_nvfp4_b & valid_in}};
-
-    // Remapper Instances (input-gated to zero during INT4 mode)
+    // Remapper Instances
     logic signed [3:0] rem_a0, rem_b0, rem_a1, rem_b1;
     logic signed [3:0] rem_a2, rem_b2, rem_a3, rem_b3;
 
-    nvfp4_e2m1_remapper u_rem_a0 (.nvfp4_in(nv_a0_raw), .rem_signed(rem_a0));
-    nvfp4_e2m1_remapper u_rem_b0 (.nvfp4_in(nv_b0_raw), .rem_signed(rem_b0));
-    nvfp4_e2m1_remapper u_rem_a1 (.nvfp4_in(nv_a1_raw), .rem_signed(rem_a1));
-    nvfp4_e2m1_remapper u_rem_b1 (.nvfp4_in(nv_b1_raw), .rem_signed(rem_b1));
-    nvfp4_e2m1_remapper u_rem_a2 (.nvfp4_in(nv_a2_raw), .rem_signed(rem_a2));
-    nvfp4_e2m1_remapper u_rem_b2 (.nvfp4_in(nv_b2_raw), .rem_signed(rem_b2));
-    nvfp4_e2m1_remapper u_rem_a3 (.nvfp4_in(nv_a3_raw), .rem_signed(rem_a3));
-    nvfp4_e2m1_remapper u_rem_b3 (.nvfp4_in(nv_b3_raw), .rem_signed(rem_b3));
+    nvfp4_e2m1_remapper u_rem_a0 (.nvfp4_in(A0), .rem_signed(rem_a0));
+    nvfp4_e2m1_remapper u_rem_b0 (.nvfp4_in(B0), .rem_signed(rem_b0));
+    nvfp4_e2m1_remapper u_rem_a1 (.nvfp4_in(A1), .rem_signed(rem_a1));
+    nvfp4_e2m1_remapper u_rem_b1 (.nvfp4_in(B1), .rem_signed(rem_b1));
+    nvfp4_e2m1_remapper u_rem_a2 (.nvfp4_in(A2), .rem_signed(rem_a2));
+    nvfp4_e2m1_remapper u_rem_b2 (.nvfp4_in(B2), .rem_signed(rem_b2));
+    nvfp4_e2m1_remapper u_rem_a3 (.nvfp4_in(A3), .rem_signed(rem_a3));
+    nvfp4_e2m1_remapper u_rem_b3 (.nvfp4_in(B3), .rem_signed(rem_b3));
 
-    // Combine via Bitwise OR (Zero MUX select line glitching)
+    // Dynamic Input Operand Selection & Valid-Gating (Minimal Single-Layer MUX)
     logic signed [3:0] a0_in, b0_in, a1_in, b1_in;
     logic signed [3:0] a2_in, b2_in, a3_in, b3_in;
 
-    assign a0_in = int_a0_raw | rem_a0;
-    assign b0_in = int_b0_raw | rem_b0;
-    assign a1_in = int_a1_raw | rem_a1;
-    assign b1_in = int_b1_raw | rem_b1;
-    assign a2_in = int_a2_raw | rem_a2;
-    assign b2_in = int_b2_raw | rem_b2;
-    assign a3_in = int_a3_raw | rem_a3;
-    assign b3_in = int_b3_raw | rem_b3;
+    always_comb begin
+        if (!valid_in) begin
+            a0_in = 4'sd0; b0_in = 4'sd0;
+            a1_in = 4'sd0; b1_in = 4'sd0;
+            a2_in = 4'sd0; b2_in = 4'sd0;
+            a3_in = 4'sd0; b3_in = 4'sd0;
+        end else begin
+            case (is_nvfp4)
+                2'b00: begin // INT4 x INT4 Mode
+                    a0_in = A0;     b0_in = B0;
+                    a1_in = A1;     b1_in = B1;
+                    a2_in = A2;     b2_in = B2;
+                    a3_in = A3;     b3_in = B3;
+                end
+                2'b01: begin // INT4_A x NVFP4_B Mode
+                    a0_in = A0;     b0_in = rem_b0;
+                    a1_in = A1;     b1_in = rem_b1;
+                    a2_in = A2;     b2_in = rem_b2;
+                    a3_in = A3;     b3_in = rem_b3;
+                end
+                2'b10: begin // NVFP4_A x INT4_B Mode
+                    a0_in = rem_a0; b0_in = B0;
+                    a1_in = rem_a1; b1_in = B1;
+                    a2_in = rem_a2; b2_in = B2;
+                    a3_in = rem_a3; b3_in = B3;
+                end
+                2'b11: begin // NVFP4 x NVFP4 Mode
+                    a0_in = rem_a0; b0_in = rem_b0;
+                    a1_in = rem_a1; b1_in = rem_b1;
+                    a2_in = rem_a2; b2_in = rem_b2;
+                    a3_in = rem_a3; b3_in = rem_b3;
+                end
+            endcase
+        end
+    end
 
     //-------------------------------------------------------------------------
     // 2. Universal Sign Pre-Encoding Matrix
@@ -327,7 +335,7 @@ module mac_reconfig_2d_baugh_wooley_nvfp4 (
     assign P_8b        = P_00_8b_ext + (mid_sum_8b << 4) + (P_11_8b_ext << 8);
 
     //-------------------------------------------------------------------------
-    // 5. Original Direct Input-Muxed Accumulator Core
+    // 5. Direct Low-Power Accumulator Core
     //-------------------------------------------------------------------------
     logic signed [15:0] ACC_00_reg, ACC_01_reg, ACC_10_reg, ACC_11_reg;
     logic               valid_out_reg;
