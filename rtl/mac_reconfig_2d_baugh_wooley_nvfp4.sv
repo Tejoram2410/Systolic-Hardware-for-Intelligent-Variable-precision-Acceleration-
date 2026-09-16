@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Module: mac_reconfig_2d_baugh_wooley_nvfp4.sv
 // Description: LOW-POWER OPTIMIZED 2D Reconfigurable 2x2 MAC Tile supporting INT4 & NVFP4
-//              (Microscaling E2M1 Block Floating-Point) with Clean Multi-Format Dispatch.
+//              (Microscaling E2M1 Block Floating-Point) with Direct Accumulator Core.
 // Precision Modes (mode_2b):
 //   - 00: 4x4 SIMD (4 parallel MACs)
 //   - 01: Dual 8x4 Horizontal Fusion (2 parallel 8x4 MACs)
@@ -292,7 +292,7 @@ module mac_reconfig_2d_baugh_wooley_nvfp4 (
     //-------------------------------------------------------------------------
     logic mode_is_4b, mode_is_8x4, mode_is_4x8, mode_is_8b;
     assign mode_is_4b  = (mode_2b == 2'b00);
-    assign mode_is_8x4 = (mode_2b == 2'b01);
+    assign mode_is_8x4 = (mode_2b == 2 me_01);
     assign mode_is_4x8 = (mode_2b == 2'b10);
     assign mode_is_8b  = (mode_2b == 2'b11);
 
